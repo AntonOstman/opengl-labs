@@ -30,15 +30,6 @@ Model *wing2;
 Model *wing3;
 Model *wing4;
 
-/*GLfloat vertices[] =
-{
-  -0.5f,0.0f,0.5f, //  1
-  -0.5f,0.0f,-0.5f, // 2
-  0.5f,0.0f,-0.5f, //  3
-  0.5f, 0.0f, 0.5f, // 4
-  0.0f,0.5f,0.0f //    5
-  };
-*/
 #define near 1.0
 
 #define far 30.0
@@ -55,101 +46,6 @@ GLfloat projectionMatrix[] = {2.0f*near/(right-left), 0.0f, (right+left)/(right-
                               0.0f, 2.0f*near/(top-bottom), (top+bottom)/(top-bottom), 0.0f,
                               0.0f, 0.0f, -(far + near)/(far - near), -2*far*near/(far - near),
                               0.0f, 0.0f, -1.0f, 0.0f };
-
-GLfloat triangles[] =
-{
-  1,2,3,
-  1,3,4,
-  1,2,5,
-  2,3,5,
-  3,4,5,
-  1,4,5
-};
-
-GLfloat vertices[] =
-{
-  -0.5f,0.0f,0.5f, // 1
-  -0.5f,0.0f,-0.5f, // 2
-  0.5f,0.0f,-0.5f, // 3
-
-  -0.5f,0.0f,0.5f, // 1
-  0.5f,0.0f,-0.5f, // 3
-  0.5f, 0.0f, 0.5f, // 4
-
-  -0.5f,0.0f,0.5f, // 1
-  -0.5f,0.0f,-0.5f, // 2
-  0.0f,0.5f,0.0f, // 5
-
- -0.5f,0.0f,-0.5f, // 2
-  0.5f,0.0f,-0.5f, // 3
-  0.0f,0.5f,0.0f, // 5
-
-  0.5f,0.0f,-0.5f, // 3
-  0.5f, 0.0f, 0.5f, // 4
-  0.0f,0.5f,0.0f, // 5
-
-  -0.5f,0.0f,0.5f, // 1
-  0.5f, 0.0f, 0.5f, // 4
-  0.0f,0.5f,0.0f // 5
-
-};
-
-
-GLfloat colors[] =
-{
-  1.0f, 0.0f, 0.0f, 1.0f, // 1
-  0.0f, 1.0f, 0.0f, 1.0f, // 2
-  0.0f, 0.0f, 1.0f, 1.0f, // 3
-
-  1.0f, 0.0f, 0.0f, 1.0f, // 1
-  0.0f, 0.0f, 1.0f, 1.0f, // 3
-  0.5f, 0.5f, 0.0f, 1.0f, // 4
-
-  1.0f, 0.0f, 0.0f, 1.0f, // 1
-  0.0f, 1.0f, 0.0f, 1.0f, // 2
-  0.0f, 0.5f, 0.5f, 1.0f, // 5
-
-  0.0f, 1.0f, 0.0f, 1.0f, // 2
-  0.0f, 0.0f, 1.0f, 1.0f, // 3
-  0.0f, 0.5f, 0.5f, 1.0f, // 5
-
-  0.0f, 0.0f, 1.0f, 1.0f, // 3
-  0.5f, 0.5f, 0.0f, 1.0f, // 4
-  0.0f, 0.5f, 0.5f, 1.0f, // 5
-
-  1.0f, 0.0f, 0.0f, 1.0f, // 1
-  0.5f, 0.5f, 0.0f, 1.0f, // 4
-  0.0f, 0.5f, 0.5f, 1.0f // 5
-};
-
-
-// translation matrix in x-axis
-GLfloat myMatrix[] = { 1.0f, 0.0f, 0.0f, 1.0f,
-
-                        0.0f, 1.0f, 0.0f, 0.0f,
-
-                        0.0f, 0.0f, 1.0f, 0.0f,
-
-                        0.0f, 0.0f, 0.0f, 1.0f };
-
-GLfloat scaleMatrix[] = {
-  0.5f, 0.0f, 0.0f, 0.0f,
-  0.0f, 0.5f, 0.0f, 0.0f,
-  0.0f, 0.0f, 1.0f, 0.0f,
-  0.0f, 0.0f, 0.0f, 1.0f
-};
-
-GLfloat yrotMatrix[] = {
-  1.0f, 0.0f, 0.0f, 0.0f,
-  0.0f, 1.0f, 0.0f, 0.0f,
-  0.0f, 0.0f, 1.0f, 0.0f,
-  0.0f, 0.0f, 0.0f, 1.0f
-};
-
-// vertex array object
-// unsigned int vertexArrayObjID;
-
-// unsigned int bunnyVertexArrayObjID;
 
 void OnTimer(int value)
 {
@@ -189,7 +85,7 @@ void renderEntity(GraphicsEntity* entity) {
 
     while (!(cur_entity == nullptr)){
 
-        new_scaling = scaling * cur_entity->translation * cur_entity->rotation* cur_entity->scaling;
+        new_scaling = scaling * cur_entity->translation * cur_entity->rotation * cur_entity->scaling;
         if (cur_entity->model != nullptr){
             glBindVertexArray(cur_entity->model->vao);    // Select VAO for bunny 1
             glUniformMatrix4fv(glGetUniformLocation(program, "scaleMatrix"), 1, GL_TRUE, new_scaling.m);
@@ -430,6 +326,10 @@ void keyPressed(unsigned char key, int xx, int yy) {
             p = vec3(pos.m[3], pos.m[7], pos.m[11]);
             // mat4 new_look = lookAtv(p, l, v);
             // copymatrix(&lookAtm, &new_look);
+            vec3 p_new = p;
+            p_new.x = cos(p.x);
+            p_new.y = p.y;
+            p_new.z = sin(p.z);
             lookAtm = lookAtv(p, l, v);
             break;
         break;

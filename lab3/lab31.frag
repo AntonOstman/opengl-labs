@@ -15,6 +15,5 @@ void main(void)
         strength = 0;
     }
 
-
     out_Color = strength * texture(texUnit, vertTexCoord);
 }

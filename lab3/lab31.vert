@@ -14,9 +14,9 @@ out vec2 vertTexCoord;
 void main(void)
 {
 
-    mat4 scaling =  rotTrans * scaleMatrix;
-    normal = mat3(scaling) * in_Normal;
-	gl_Position =  projection *  lookAt *  scaling * vec4(in_Position, 1.0);
+    mat4 world =  rotTrans * scaleMatrix;
+    normal = mat3(world) * in_Normal;
+	gl_Position =  projection *  lookAt *  world * vec4(in_Position, 1.0);
 
 
 	vertTexCoord = inTexCoord;
