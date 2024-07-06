@@ -20,6 +20,9 @@ lab23 : lab2-3.cpp $(commondir)GL_utilities.c $(commondir)LoadTGA.c $(commondir)
 
 lab31 : lab31.cpp $(commondir)GL_utilities.c $(commondir)LoadTGA.c $(commondir)Windows/MicroGlut.c $(commondir)Windows/glew.c
 	g++ -Wall -o lab31 -I$(commondir) -I../common/Windows -DGL_GLEXT_PROTOTYPES lab31.cpp $(commondir)GL_utilities.c $(commondir)LoadTGA.c $(commondir)Windows/MicroGlut.c $(commondir)Windows/glew.c -lopengl32 -lglu32 -lgdi32
+
+linux : lab31.cpp $(commondir)GL_utilities.c $(commondir)LoadTGA.c $(commondir)Linux/MicroGlut.c
+	g++ -Wall -o lab31 -I$(commondir) -I../common/Linux -DGL_GLEXT_PROTOTYPES lab31.cpp $(commondir)GL_utilities.c $(commondir)LoadTGA.c $(commondir)Linux/MicroGlut.c -lXt -lX11 -lGL -lm
 clean :
 	rm lab1-1
 

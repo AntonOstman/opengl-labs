@@ -11,9 +11,8 @@ void main(void)
     // out_Color = texture(texUnit, vertTexCoord);
     const vec3 light = normalize(vec3(0.58, 0.58, 0.58));
     float strength = dot(light, normal);
-    if (strength < 0){
-        strength = 0;
-    }
+
+    max(strength, 0);
 
     out_Color = strength * texture(texUnit, vertTexCoord);
 }
