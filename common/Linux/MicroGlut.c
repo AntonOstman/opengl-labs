@@ -182,6 +182,7 @@ make_window( Display *dpy, const char *name,
 		}
 		if (gMode & GLUT_DEPTH)
 		{
+            printf("depth buffer init\n");
 			attribs[i++] = GLX_DEPTH_SIZE;
 			attribs[i++] = 1;
 		}

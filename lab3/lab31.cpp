@@ -77,6 +77,7 @@ GLuint indices[] =
 
 GLfloat t;
 GLuint program;
+GLuint skyboxshader;
 GLuint myTex;
 
 Model *roof;
@@ -237,7 +238,14 @@ void createAirbox(GLuint shaderprog){
 
 	skybox = LoadModel("new-skyboxes/skybox.obj");
     Gskybox = createGraphicsEntity(skybox);
-    DrawModel(skybox, shaderprog, "in_Position", "in_Normal", "inTexCoord");
+    Gskybox->scaling = mat4(2);
+    /*Gskybox->rotation = Rx(3.14);*/
+    /*Gskybox->scaling.m[0] = 4;*/
+    /*Gskybox->scaling.m[5] = 4;*/
+    /*Gskybox->scaling.m[10] = 4;*/
+    Gskybox->scaling.m[15] = 1;
+
+    DrawModel(skybox, shaderprog, "in_Position", nullptr, "inTexCoord");
 }
 
 void init(void)
@@ -246,10 +254,14 @@ void init(void)
 	// Reference to shader program
 	dumpInfo();
 	program = loadShaders("lab31.vert", "lab31.frag");
+	skyboxshader = loadShaders("skyboxshader.vert", "skyboxshader.frag");
 	printError("init shader");
 
     LoadTGATextureSimple("labskybox512.tga", &myTex);
     glBindTexture(GL_TEXTURE_2D, myTex);
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);*/
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);*/
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);*/
     glUniform1i(glGetUniformLocation(program, "texUnit"), 0); // Texture unit 0
     glActiveTexture(GL_TEXTURE0);
 
@@ -266,7 +278,7 @@ void init(void)
 
     createGround(program);
     createWindmill(program);
-    createAirbox(program);
+    createAirbox(skyboxshader);
     
     glutMotionFunc(mouseCallback);
 	printError("init arrays");
@@ -278,19 +290,21 @@ void keyPressed(unsigned char key, int x, int y);
 void renderEntities(){
 
 	// upload matrix
-    t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
-    glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, lookAtm.m);
-    glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_TRUE, projectionMatrix);
-	printError("upload matrix error");
-    wingRotation->rotation = xRotation(t/1000);
-    
+    glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, (r * lookAtv(p, l, v)).m);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
     renderEntity(Gskybox);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-    /*renderEntity(Gground);*/
+    t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
+    glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, lookAtm.m);
+    glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_TRUE, projectionMatrix);
+	printError("upload matrix error");
+    wingRotation->rotation = xRotation(t/1000);
+    
+
+    renderEntity(Gground);
     /*renderEntity(windmill);*/
 	printError("Render::error");
 
@@ -340,7 +354,6 @@ void move(unsigned char key, mat4* matrix, const char* keyset){
     if (key == keyset[5]){
         translate(0.0, 0.0, -0.1, matrix);
     }
-
 }
 
 
@@ -348,7 +361,7 @@ unsigned char prev_key;
 
 void keyPressed(unsigned char key, int xx, int yy) {
 
-    const char* keyset = "aywdYs";
+    const char* keyset = "aYwdys";
     if (key == '1' || key == '2' || key == '3' || key == '4' || key == '5'){
         prev_key = key;
     }
