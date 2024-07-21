@@ -79,6 +79,7 @@ GLfloat t;
 GLuint program;
 GLuint skyboxshader;
 GLuint myTex;
+GLuint myTex2;
 
 Model *roof;
 Model *balcony;
@@ -124,7 +125,7 @@ void OnTimer(int value)
   glutTimerFunc(20, &OnTimer, value);
 }
 
-void renderEntity(GraphicsEntity* entity) {
+void renderEntity(GraphicsEntity* entity, GLuint shader) {
 
     GraphicsEntity* cur_entity = entity;
     mat4 scaling = mat4(1);
@@ -135,7 +136,7 @@ void renderEntity(GraphicsEntity* entity) {
         new_scaling = scaling * cur_entity->translation * cur_entity->rotation * cur_entity->scaling;
         if (cur_entity->model != nullptr){
             glBindVertexArray(cur_entity->model->vao);    // Select VAO
-            glUniformMatrix4fv(glGetUniformLocation(program, "scaleMatrix"), 1, GL_TRUE, new_scaling.m);
+            glUniformMatrix4fv(glGetUniformLocation(shader, "scaleMatrix"), 1, GL_TRUE, new_scaling.m);
             glDrawElements(GL_TRIANGLES, cur_entity->model->numIndices, GL_UNSIGNED_INT, 0L); // draw element on VAO
             printError("error binding");
         }
@@ -178,8 +179,6 @@ void mouseCallback(int x, int y);
 
 void createWindmill(GLuint shaderprog){
 
-    
-
 	roof = LoadModel("windmill/windmill-roof.obj");
 	walls = LoadModel("windmill/windmill-walls2.obj");
 	balcony = LoadModel("windmill/windmill-balcony.obj");
@@ -198,14 +197,15 @@ void createWindmill(GLuint shaderprog){
     Gwing2 = createGraphicsEntity(wing2);
     Gwing3 = createGraphicsEntity(wing3);
     Gwing4 = createGraphicsEntity(wing4);
-    DrawModel(roof, shaderprog, "in_Position", "in_Normal", "inTexCoord");
-    DrawModel(wing1, shaderprog, "in_Position", "in_Normal", "inTexCoord");
-    DrawModel(wing2, shaderprog, "in_Position", "in_Normal", "inTexCoord");
-    DrawModel(wing3, shaderprog, "in_Position", "in_Normal", "inTexCoord");
-    DrawModel(wing4, shaderprog, "in_Position", "in_Normal", "inTexCoord");
-    DrawModel(walls, shaderprog, "in_Position", "in_Normal", "inTexCoord");
-    DrawModel(balcony, shaderprog, "in_Position", "in_Normal", "inTexCoord");
+    DrawModel(roof, shaderprog,    "in_Position", "in_Normal", nullptr);
+    DrawModel(wing1, shaderprog,   "in_Position", "in_Normal", nullptr);
+    DrawModel(wing2, shaderprog,   "in_Position", "in_Normal", nullptr);
+    DrawModel(wing3, shaderprog,   "in_Position", "in_Normal", nullptr);
+    DrawModel(wing4, shaderprog,   "in_Position", "in_Normal", nullptr);
+    DrawModel(walls, shaderprog,   "in_Position", "in_Normal", nullptr);
+    DrawModel(balcony, shaderprog, "in_Position", "in_Normal", nullptr);
 
+	printError("windmill err");
 
     float PI = 3.14; 
     float wingx =  4.599998;
@@ -228,24 +228,50 @@ void createWindmill(GLuint shaderprog){
 
 void createGround(GLuint shaderprog){
 
-    ground = LoadDataToModel(vertices, vertex_normals, tex_coords, nullptr, indices, 4, 6);
+    ground = LoadDataToModel(vertices, vertex_normals, NULL, nullptr, indices, 4, 6);
+    DrawModel(ground, shaderprog, "in_Position", "in_Normal", nullptr);
     Gground = createGraphicsEntity(ground);
-    DrawModel(ground, shaderprog, "in_Position", "in_Normal", "inTexCoord");
 
+	printError("ground err");
 }
 
-void createAirbox(GLuint shaderprog){
+void createSkyBox(GLuint shaderprog){
 
 	skybox = LoadModel("new-skyboxes/skybox.obj");
     Gskybox = createGraphicsEntity(skybox);
-    Gskybox->scaling = mat4(2);
-    /*Gskybox->rotation = Rx(3.14);*/
-    /*Gskybox->scaling.m[0] = 4;*/
+    /*Gskybox->scaling = mat4(1000);*/
+    /*Gskybox->translation = T(0,0,0);*/
+    /*Gskybox->rotation = Rz(3.14);*/
+    Gskybox->translation = T(0,0,10);
     /*Gskybox->scaling.m[5] = 4;*/
     /*Gskybox->scaling.m[10] = 4;*/
-    Gskybox->scaling.m[15] = 1;
+    /*Gskybox->scaling.m[15] = 1;*/
 
     DrawModel(skybox, shaderprog, "in_Position", nullptr, "inTexCoord");
+	printError("skybox err");
+}
+
+void activateTexture(const char* texname, unsigned int unit, GLuint tex, GLuint shader){
+
+    GLuint glTextureUnit = GL_TEXTURE0 + unit;
+    if (glTextureUnit > 0x84DF){
+        printf("to many texture units\n");
+        exit(1);
+    }
+
+    /*glUniform1i(glGetUniformLocation(program, "texUnit"), unit); // Texture unit 1*/
+    glActiveTexture(glTextureUnit);
+    glUniform1i(glGetUniformLocation(shader, "texUnit"), unit); // Texture unit 1
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+	printError("activate tex err");
+}
+
+void clearTexture(unsigned int unit){
+    GLuint glTextureUnit = GL_TEXTURE0 + unit;
+
+    glActiveTexture(glTextureUnit);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void init(void)
@@ -253,17 +279,14 @@ void init(void)
     printf("start program\n");
 	// Reference to shader program
 	dumpInfo();
-	program = loadShaders("lab31.vert", "lab31.frag");
-	skyboxshader = loadShaders("skyboxshader.vert", "skyboxshader.frag");
+	/*program = loadShaders("lab31.vert", "lab31.frag");*/
+	/*skyboxshader = loadShaders("skyboxshader.vert", "skyboxshader.frag");*/
+	skyboxshader = loadShaders("simple.vert", "simple.frag");
+	program = loadShaders("simple.vert", "simple.frag");
 	printError("init shader");
 
     LoadTGATextureSimple("labskybox512.tga", &myTex);
-    glBindTexture(GL_TEXTURE_2D, myTex);
-    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);*/
-    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);*/
-    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);*/
-    glUniform1i(glGetUniformLocation(program, "texUnit"), 0); // Texture unit 0
-    glActiveTexture(GL_TEXTURE0);
+    LoadTGATextureSimple("maskros512.tga", &myTex2);
 
 	// GL inits
 	glClearColor(0.2,0.2,0.4,0);
@@ -278,7 +301,7 @@ void init(void)
 
     createGround(program);
     createWindmill(program);
-    createAirbox(skyboxshader);
+    createSkyBox(skyboxshader);
     
     glutMotionFunc(mouseCallback);
 	printError("init arrays");
@@ -290,22 +313,29 @@ void keyPressed(unsigned char key, int x, int y);
 void renderEntities(){
 
 	// upload matrix
-    glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, (r * lookAtv(p, l, v)).m);
+    glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "lookAt"), 1, GL_TRUE, (r * lookAtv(p, l, v)).m);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
-    renderEntity(Gskybox);
+    Gskybox->rotation = inverse(r);
+    activateTexture("labskybox512.tga", 0, myTex, skyboxshader);
+    renderEntity(Gskybox, skyboxshader);
+    clearTexture(0);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+	printError("skybox error");
 
     t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
     glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, lookAtm.m);
     glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_TRUE, projectionMatrix);
 	printError("upload matrix error");
     wingRotation->rotation = xRotation(t/1000);
-    
 
-    renderEntity(Gground);
-    /*renderEntity(windmill);*/
+
+    activateTexture("maskros512.tga", 0, myTex2, program);
+    renderEntity(Gground, program);
+    renderEntity(windmill, program);
+    clearTexture(0);
+	printError("maskros error");
 	printError("Render::error");
 
 }
@@ -320,7 +350,6 @@ void display(void)
     renderEntities();
 
     glutKeyboardFunc(keyPressed);
-
 
 	printError("display");
 	glutSwapBuffers();
@@ -388,7 +417,7 @@ void keyPressed(unsigned char key, int xx, int yy) {
             translated_lookAtm.m[3] += pos.m[3];
             translated_lookAtm.m[7] += pos.m[7];
             translated_lookAtm.m[11] += pos.m[11];
-            lookAtm = r * translated_lookAtm;
+            lookAtm = inverse(r) * translated_lookAtm;
             break;
         break;
     }
@@ -429,7 +458,7 @@ void mouseCallback(int x, int y){
     prevx = x;
     prevy = y;
     vec3 camt = vec3(lookAtm.m[3], lookAtm.m[7], lookAtm.m[11]);
-    lookAtm = r * translated_lookAtm;
+    lookAtm = inverse(r) * translated_lookAtm;
     printMat4(lookAtm);
 }
 
