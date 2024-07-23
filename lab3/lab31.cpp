@@ -20,7 +20,7 @@
 
 #define near 1.0
 
-#define far 30.0
+#define far 1000.0
 
 #define right 0.5
 
@@ -42,6 +42,10 @@ struct GraphicsEntity{
     mat4 scaling;
     GraphicsEntity *next;
     GraphicsEntity *child;
+    const char* in_pos;
+    const char* in_normal;
+    const char* in_tex;
+    
 } typedef GraphicsEntity;
 
 #define kGroundSize 1000.f
@@ -92,6 +96,8 @@ Model *wing4;
 Model *ground;
 Model *skybox;
 
+Model *teapot;
+
 GraphicsEntity* windmill;
 GraphicsEntity* Groof;
 GraphicsEntity* Gbalcony;
@@ -104,10 +110,17 @@ GraphicsEntity* Gwing4;
 GraphicsEntity* Gskybox;
 GraphicsEntity* Gground;
 
+GraphicsEntity *Gteapot;
+
 GraphicsEntity* createGraphicsEntity(Model* model) {
 
     // Fet memory leak inc.
     GraphicsEntity* entity = (GraphicsEntity*) malloc(sizeof(GraphicsEntity));
+
+    entity->in_pos = "in_Position";
+    entity->in_normal = "in_Normal";
+    entity->in_tex = "inTexCoord";
+
     entity->translation = mat4(1);
     entity->rotation = mat4(1);
     entity->scaling = mat4(1);
@@ -135,10 +148,11 @@ void renderEntity(GraphicsEntity* entity, GLuint shader) {
 
         new_scaling = scaling * cur_entity->translation * cur_entity->rotation * cur_entity->scaling;
         if (cur_entity->model != nullptr){
-            glBindVertexArray(cur_entity->model->vao);    // Select VAO
             glUniformMatrix4fv(glGetUniformLocation(shader, "scaleMatrix"), 1, GL_TRUE, new_scaling.m);
+            /*glBindVertexArray(cur_entity->model->vao);    // Select VAO*/
+            DrawModel(cur_entity->model, shader, cur_entity->in_pos, cur_entity->in_normal, cur_entity->in_tex);
             glDrawElements(GL_TRIANGLES, cur_entity->model->numIndices, GL_UNSIGNED_INT, 0L); // draw element on VAO
-            printError("error binding");
+            printError("error drawing");
         }
         printError("render entity error");
 
@@ -152,19 +166,13 @@ void renderEntity(GraphicsEntity* entity, GLuint shader) {
     }
 }
 
-
-void copymatrix(mat4* first, mat4* second){
-    for (int i = 0; i < 16; i++){
-        first->m[i] = second->m[i];
-    }
-}
-
 mat4 r = mat4(1);
 vec3 p;
 vec3 l;
 vec3 v;
 mat4 lookAtm;
 mat4 translated_lookAtm;
+mat4 camT;
 
 mat4 xRotation(float theta){
 
@@ -177,6 +185,12 @@ mat4 xRotation(float theta){
 
 void mouseCallback(int x, int y);
 
+void createTeapot(GLuint shaderprog){
+	teapot = LoadModel("models/various/teapot.obj");
+    Gteapot = createGraphicsEntity(teapot);
+    Gteapot->translation = T(20,0,20);
+    Gteapot->in_tex = nullptr;
+}
 void createWindmill(GLuint shaderprog){
 
 	roof = LoadModel("windmill/windmill-roof.obj");
@@ -197,13 +211,14 @@ void createWindmill(GLuint shaderprog){
     Gwing2 = createGraphicsEntity(wing2);
     Gwing3 = createGraphicsEntity(wing3);
     Gwing4 = createGraphicsEntity(wing4);
-    DrawModel(roof, shaderprog,    "in_Position", "in_Normal", nullptr);
-    DrawModel(wing1, shaderprog,   "in_Position", "in_Normal", nullptr);
-    DrawModel(wing2, shaderprog,   "in_Position", "in_Normal", nullptr);
-    DrawModel(wing3, shaderprog,   "in_Position", "in_Normal", nullptr);
-    DrawModel(wing4, shaderprog,   "in_Position", "in_Normal", nullptr);
-    DrawModel(walls, shaderprog,   "in_Position", "in_Normal", nullptr);
-    DrawModel(balcony, shaderprog, "in_Position", "in_Normal", nullptr);
+
+    windmill->in_tex = NULL;
+    Groof->in_tex = NULL;
+    Gbalcony->in_tex = NULL;
+    Gwing1->in_tex = NULL;
+    Gwing2->in_tex = NULL;
+    Gwing3->in_tex = NULL;
+    Gwing4->in_tex = NULL;
 
 	printError("windmill err");
 
@@ -229,25 +244,19 @@ void createWindmill(GLuint shaderprog){
 void createGround(GLuint shaderprog){
 
     ground = LoadDataToModel(vertices, vertex_normals, NULL, nullptr, indices, 4, 6);
-    DrawModel(ground, shaderprog, "in_Position", "in_Normal", nullptr);
     Gground = createGraphicsEntity(ground);
+    Gground->in_tex = nullptr;
 
 	printError("ground err");
 }
 
 void createSkyBox(GLuint shaderprog){
 
-	skybox = LoadModel("new-skyboxes/skybox.obj");
+    skybox = LoadModel("skybox/skyboxfull.obj");
     Gskybox = createGraphicsEntity(skybox);
-    /*Gskybox->scaling = mat4(1000);*/
-    /*Gskybox->translation = T(0,0,0);*/
-    /*Gskybox->rotation = Rz(3.14);*/
     Gskybox->translation = T(0,0,10);
-    /*Gskybox->scaling.m[5] = 4;*/
-    /*Gskybox->scaling.m[10] = 4;*/
-    /*Gskybox->scaling.m[15] = 1;*/
+    Gskybox->in_normal = NULL;
 
-    DrawModel(skybox, shaderprog, "in_Position", nullptr, "inTexCoord");
 	printError("skybox err");
 }
 
@@ -259,12 +268,16 @@ void activateTexture(const char* texname, unsigned int unit, GLuint tex, GLuint 
         exit(1);
     }
 
-    /*glUniform1i(glGetUniformLocation(program, "texUnit"), unit); // Texture unit 1*/
     glActiveTexture(glTextureUnit);
-    glUniform1i(glGetUniformLocation(shader, "texUnit"), unit); // Texture unit 1
-    glBindTexture(GL_TEXTURE_2D, tex);
-
 	printError("activate tex err");
+    glBindTexture(GL_TEXTURE_2D, tex);
+	printError("bind 2 tex err");
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);*/
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);*/
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);*/
+
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);*/
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
 }
 
 void clearTexture(unsigned int unit){
@@ -272,6 +285,7 @@ void clearTexture(unsigned int unit){
 
     glActiveTexture(glTextureUnit);
     glBindTexture(GL_TEXTURE_2D, 0);
+	printError("clear tex err");
 }
 
 void init(void)
@@ -279,28 +293,28 @@ void init(void)
     printf("start program\n");
 	// Reference to shader program
 	dumpInfo();
-	/*program = loadShaders("lab31.vert", "lab31.frag");*/
-	/*skyboxshader = loadShaders("skyboxshader.vert", "skyboxshader.frag");*/
-	skyboxshader = loadShaders("simple.vert", "simple.frag");
+	skyboxshader = loadShaders("skyboxshader.vert", "skyboxshader.frag");
 	program = loadShaders("simple.vert", "simple.frag");
 	printError("init shader");
 
-    LoadTGATextureSimple("labskybox512.tga", &myTex);
-    LoadTGATextureSimple("maskros512.tga", &myTex2);
+    LoadTGATextureSimple("skybox/SkyBoxFull.tga", &myTex);
+    /*LoadTGATextureSimple("maskros512.tga", &myTex2);*/
 
 	// GL inits
 	glClearColor(0.2,0.2,0.4,0);
-	/*glDisable(GL_DEPTH_TEST);*/
 	printError("GL inits");
 
     p = vec3(0, 0, 10.f);
     l = vec3(0.f, 0.f, 0.f);
     v = vec3(0, 1.f, 0.f);
-    translated_lookAtm = lookAtv(p, l, v);
-    lookAtm = lookAtv(p, l, v);
+    /*translated_lookAtm = lookAtv(p, l, v);*/
+    camT = T(-50,-15,5);
+    r = Ry(1.7) * Rx(-0.16);
+    lookAtm = inverse(r) * camT * lookAtv(p, l, v);
 
     createGround(program);
     createWindmill(program);
+    createTeapot(program);
     createSkyBox(skyboxshader);
     
     glutMotionFunc(mouseCallback);
@@ -312,11 +326,13 @@ void keyPressed(unsigned char key, int x, int y);
 
 void renderEntities(){
 
-	// upload matrix
-    glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "lookAt"), 1, GL_TRUE, (r * lookAtv(p, l, v)).m);
+    glUseProgram(skyboxshader); // Added 2022-03
+    glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "lookAt"), 1, GL_TRUE, (inverse(r) * lookAtv(p, l, v)).m);
+    glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "projection"), 1, GL_TRUE, projectionMatrix);
+
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
-    Gskybox->rotation = inverse(r);
+	printError("skybox matrix error");
     activateTexture("labskybox512.tga", 0, myTex, skyboxshader);
     renderEntity(Gskybox, skyboxshader);
     clearTexture(0);
@@ -324,17 +340,18 @@ void renderEntities(){
 	glEnable(GL_DEPTH_TEST);
 	printError("skybox error");
 
+    glUseProgram(program); // Added 2022-03
+
     t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
-    glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, lookAtm.m);
+    glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, (lookAtm).m);
     glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_TRUE, projectionMatrix);
 	printError("upload matrix error");
     wingRotation->rotation = xRotation(t/1000);
 
-
-    activateTexture("maskros512.tga", 0, myTex2, program);
     renderEntity(Gground, program);
     renderEntity(windmill, program);
-    clearTexture(0);
+    renderEntity(Gteapot, program);
+
 	printError("maskros error");
 	printError("Render::error");
 
@@ -347,6 +364,9 @@ void display(void)
 	// clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    
+    /*printMat4(camT);*/
+    /*printMat4(r);*/
     renderEntities();
 
     glutKeyboardFunc(keyPressed);
@@ -359,39 +379,43 @@ void translate(float x, float y, float z, mat4* matrix){
     matrix->m[3] = matrix->m[3] + x;
     matrix->m[7] = matrix->m[7] + y; 
     matrix->m[11] = matrix->m[11] + z; 
-    printf("x: %f, y: %f, z: %f\n", matrix->m[3], matrix->m[7], matrix->m[11]);
+    /*printf("x: %f, y: %f, z: %f\n", matrix->m[3], matrix->m[7], matrix->m[11]);*/
 }
 
 
 void move(unsigned char key, mat4* matrix, const char* keyset){
+    float speed = 0.4;
 
     if (key == keyset[0]){
-        translate(0.1, 0.0, 0.0, matrix);
+        translate(speed, 0.0, 0.0, matrix);
     }
     if (key == keyset[1]){
-       translate(0.0, 0.1 ,0.0, matrix);
+       translate(0.0, speed ,0.0, matrix);
     }
     if (key == keyset[2]){
-        translate(0.0, 0, 0.1, matrix);
+        translate(0.0, 0, speed, matrix);
     }
     if (key == keyset[3]){
-        translate(-0.1, 0, 0, matrix);
+        translate(-speed, 0, 0, matrix);
     }
     if (key == keyset[4]){
-        translate(0.0, -0.1, 0.0, matrix);
+        translate(0.0, -speed, 0.0, matrix);
     }
     if (key == keyset[5]){
-        translate(0.0, 0.0, -0.1, matrix);
+        translate(0.0, 0.0, -speed, matrix);
     }
 }
 
 
 unsigned char prev_key;
+float skyx = 0;
+float skyy = 0;
+float skyz = 0;
 
 void keyPressed(unsigned char key, int xx, int yy) {
 
     const char* keyset = "aYwdys";
-    if (key == '1' || key == '2' || key == '3' || key == '4' || key == '5'){
+    if (key == '1' || key == '2' || key == '3' || key == '4' || key == '5' || key == '6'){
         prev_key = key;
     }
     switch (prev_key){
@@ -411,14 +435,25 @@ void keyPressed(unsigned char key, int xx, int yy) {
             move(key, &(Gwing4->translation), keyset);
             break;
         case '5':
+            {
             mat4 pos = mat4(0);
             move(key, &pos, keyset);
             pos = r * pos;
-            translated_lookAtm.m[3] += pos.m[3];
-            translated_lookAtm.m[7] += pos.m[7];
-            translated_lookAtm.m[11] += pos.m[11];
-            lookAtm = inverse(r) * translated_lookAtm;
+            camT.m[3] += pos.m[3];
+            camT.m[7] += pos.m[7];
+            camT.m[11] += pos.m[11];
+            lookAtm = inverse(r) *camT *  lookAt(p, l, v);
+            }
             break;
+        case '6':
+            {
+            mat4 posi = mat4(0);
+            move(key, &posi, keyset);
+            skyx += posi.m[3];
+            skyz += posi.m[7];
+            skyz += posi.m[11];
+            Gskybox->rotation = Rx(skyx) * Ry(skyy) * Rz(skyz);
+            }
         break;
     }
 }
@@ -443,10 +478,10 @@ void mouseCallback(int x, int y){
         dy = 0;
     }
 
-    printf("%d %d %f %f \n", dx, dy, anglex, angley);
+    printf("d: %d %d x: %f y: %f \n", dx, dy, anglex, angley);
 
-    anglex += ((float)dx) / 500.f;
-    angley += ((float)dy) / 500.f;
+    anglex += ((float)dx) / 100.f;
+    angley += ((float)dy) / 100.f;
 
     mat3 rx = mat3(1);
     mat3 ry = mat3(1);
@@ -454,12 +489,11 @@ void mouseCallback(int x, int y){
     rx = Rx(angley);
     ry = Ry(anglex);
     r = ry * rx;
-    printVec3(l);
+    /*printVec3(l);*/
     prevx = x;
     prevy = y;
-    vec3 camt = vec3(lookAtm.m[3], lookAtm.m[7], lookAtm.m[11]);
-    lookAtm = inverse(r) * translated_lookAtm;
-    printMat4(lookAtm);
+    lookAtm = inverse(r) * camT * lookAt(p, l, v);
+    printMat4(camT);
 }
 
 int main(int argc, char *argv[])

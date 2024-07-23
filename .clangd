@@ -1,2 +1,5 @@
 CompileFlags:
-  CompilationDatabase: /home/anton/projects/opengl-labs/lab3
+  CompilationDatabase: /home/anton/projects/opengl-labs/lab3/compile_commands.json
+SemanticTokens:
+  DisabledKinds: ["InactiveCode"]
+  DisabledModifiers: ["Definition"]

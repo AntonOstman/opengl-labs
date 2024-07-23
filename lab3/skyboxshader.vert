@@ -13,7 +13,6 @@ void main(void)
     mat4 world = scaleMatrix;
 	gl_Position =  projection *  lookAt *  world * vec4(in_Position, 1.0);
 
-
 	vertTexCoord = inTexCoord;
 }
 
