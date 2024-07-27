@@ -61,7 +61,7 @@ struct GraphicsEntity{
     
 } typedef GraphicsEntity;
 
-#define kGroundSize 1000.f
+#define kGroundSize 100.f
 
 vec3 vertices[] =
 {
@@ -302,6 +302,13 @@ void clearTexture(unsigned int unit){
 	printError("clear tex err");
 }
 
+// -- Rotation matrix
+int prevx = -1;
+int prevy = -1;
+float anglex = 0;
+float angley = 0;
+// -- Rotation matrix
+
 void init(void)
 {
     printf("start program\n");
@@ -323,7 +330,9 @@ void init(void)
     v = vec3(0, 1.f, 0.f);
     /*translated_lookAtm = lookAtv(p, l, v);*/
     camT = T(-50,-15,5);
-    r = Ry(1.7) * Rx(-0.16);
+    anglex = 1.7;
+    angley = -0.16;
+    r = Ry(anglex) * Rx(angley);
     lookAtm = inverse(r) * camT * lookAtv(p, l, v);
 
     createGround(program);
@@ -369,9 +378,15 @@ void renderEntities(){
 	printError("upload matrix error");
     wingRotation->rotation = xRotation(t/1000);
 
-    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[0]);
+    vec3 ambientColor = vec3(0,0,0);
+    glUniform3fv(glGetUniformLocation(program, "ambientColor"), 1, &ambientColor.x);
+    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[2]);
     renderEntity(Gground, program);
-    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[1]);
+
+    // ambientColor = vec3(0.6,0.6,0.6);
+    ambientColor = vec3(1,1,1);
+    glUniform3fv(glGetUniformLocation(program, "ambientColor"), 1, &ambientColor.x);
+    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[2]);
     renderEntity(windmill, program);
     glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[2]);
     renderEntity(Gteapot, program);
@@ -482,10 +497,6 @@ void keyPressed(unsigned char key, int xx, int yy) {
     }
 }
 
-int prevx = -1;
-int prevy = -1;
-float anglex = 0;
-float angley = 0;
 
 void mouseCallback(int x, int y){
 
