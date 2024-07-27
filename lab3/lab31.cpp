@@ -30,6 +30,19 @@
 
 #define bottom -0.5
 
+vec3 lightSourcesColorsArr[] = { vec3(1.0f, 0.0f, 0.0f), // Red light
+                                 vec3(0.0f, 1.0f, 0.0f), // Green light
+                                 vec3(0.0f, 0.0f, 1.0f), // Blue light
+                                 vec3(1.0f, 1.0f, 1.0f) }; // White light
+
+GLint isDirectional[] = {0,0,1,1};
+
+vec3 lightSourcesDirectionsPositions[] = { vec3(10.0f, 5.0f, 0.0f), // Red light, positional
+                                       vec3(0.0f, 5.0f, 10.0f), // Green light, positional
+                                       vec3(-1.0f, 0.0f, 0.0f), // Blue light along X
+                                       vec3(0.0f, 0.0f, -1.0f) }; // White light along Z
+
+GLfloat specularExponent[] = {100.0, 200.0, 60.0};
 GLfloat projectionMatrix[] = {2.0f*near/(right-left), 0.0f, (right+left)/(right-left), 0.0f,
                               0.0f, 2.0f*near/(top-bottom), (top+bottom)/(top-bottom), 0.0f,
                               0.0f, 0.0f, -(far + near)/(far - near), -2*far*near/(far - near),
@@ -143,6 +156,7 @@ void renderEntity(GraphicsEntity* entity, GLuint shader) {
     GraphicsEntity* cur_entity = entity;
     mat4 scaling = mat4(1);
     mat4 new_scaling = mat4(1);
+    scaling.m[15] = 1;
 
     while (!(cur_entity == nullptr)){
 
@@ -294,7 +308,7 @@ void init(void)
 	// Reference to shader program
 	dumpInfo();
 	skyboxshader = loadShaders("skyboxshader.vert", "skyboxshader.frag");
-	program = loadShaders("simple.vert", "simple.frag");
+	program = loadShaders("simple-vert.glsl", "simple-frag.glsl");
 	printError("init shader");
 
     LoadTGATextureSimple("skybox/SkyBoxFull.tga", &myTex);
@@ -326,6 +340,7 @@ void keyPressed(unsigned char key, int x, int y);
 
 void renderEntities(){
 
+
     glUseProgram(skyboxshader); // Added 2022-03
     glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "lookAt"), 1, GL_TRUE, (inverse(r) * lookAtv(p, l, v)).m);
     glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "projection"), 1, GL_TRUE, projectionMatrix);
@@ -341,6 +356,12 @@ void renderEntities(){
 	printError("skybox error");
 
     glUseProgram(program); // Added 2022-03
+    vec3 camPos = vec3(camT.m[3], camT.m[7], camT.m[11]);
+    printVec3(camPos);
+    glUniform3fv(glGetUniformLocation(program, "camPos"), 1, &camPos.x);
+    glUniform3fv(glGetUniformLocation(program, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
+    glUniform3fv(glGetUniformLocation(program, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
+    glUniform1iv(glGetUniformLocation(program, "isDirectional"), 4, isDirectional);
 
     t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
     glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, (lookAtm).m);
@@ -348,8 +369,11 @@ void renderEntities(){
 	printError("upload matrix error");
     wingRotation->rotation = xRotation(t/1000);
 
+    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[0]);
     renderEntity(Gground, program);
+    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[1]);
     renderEntity(windmill, program);
+    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[2]);
     renderEntity(Gteapot, program);
 
 	printError("maskros error");
