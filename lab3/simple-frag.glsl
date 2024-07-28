@@ -16,23 +16,32 @@ out vec4 out_Color;
 void main(void)
 {
     // vec3 backgroundLight = vec3(1, 1, 1);
-    // vec3 ambientLight = ambientColor * clamp(dot(backgroundLight, worldNormal),0,1) * 0.5;
+    //vec3 ambientLight = ambientColor * clamp(dot(backgroundLight, worldNormal),0,1) * 0.5;
     vec3 totalLight = vec3(0, 0, 0);
+    totalLight += ambientColor*0.05;
+
+    vec3 cameraDirection = normalize(vec3(worldToView * vec4(surfaceCoord, 1)));
 
     for (int i = 0; i < 4; i++){
         vec3 lightIncident;
         if (isDirectional[i]) {
-            lightIncident = normalize(mat3(worldToView) * (lightSourcesDirPosArr[i]));
+            lightIncident = normalize(mat3(worldToView) * lightSourcesDirPosArr[i]);
         }
         else {
-            lightIncident = normalize(mat3(worldToView) * lightSourcesDirPosArr[i] - surfaceCoord);
+            lightIncident = normalize(mat3(worldToView) * (lightSourcesDirPosArr[i] - surfaceCoord));
         }
         vec3 lightColor = lightSourcesColorArr[i];
         float strength = max(0, dot(lightIncident, normalize(viewNormal)));
         vec3 diffuseLight = strength * lightColor;
-        totalLight += diffuseLight;
+        totalLight += diffuseLight * 0.5;
 
+        vec3 reflection = normalize(reflect(lightIncident, normalize(viewNormal)));
+        if (strength > 0.001){
+            float specular = pow(max(dot(reflection, cameraDirection), 0.01), specularExponent);
+            totalLight += specular * lightColor * 0.8;
+        }
     }
+
 
     out_Color = vec4(totalLight, 1);
     // out_Color = vec4(surfaceCoord,1);

@@ -380,13 +380,13 @@ void renderEntities(){
 
     vec3 ambientColor = vec3(0,0,0);
     glUniform3fv(glGetUniformLocation(program, "ambientColor"), 1, &ambientColor.x);
-    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[2]);
+    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[0]);
     renderEntity(Gground, program);
 
     // ambientColor = vec3(0.6,0.6,0.6);
     ambientColor = vec3(1,1,1);
     glUniform3fv(glGetUniformLocation(program, "ambientColor"), 1, &ambientColor.x);
-    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[2]);
+    glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[1]);
     renderEntity(windmill, program);
     glUniform1f(glGetUniformLocation(program, "specularExponent"), specularExponent[2]);
     renderEntity(Gteapot, program);
