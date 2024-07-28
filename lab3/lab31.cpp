@@ -162,7 +162,7 @@ void renderEntity(GraphicsEntity* entity, GLuint shader) {
 
         new_scaling = scaling * cur_entity->translation * cur_entity->rotation * cur_entity->scaling;
         if (cur_entity->model != nullptr){
-            glUniformMatrix4fv(glGetUniformLocation(shader, "modelToView"), 1, GL_TRUE, new_scaling.m);
+            glUniformMatrix4fv(glGetUniformLocation(shader, "modelToWorld"), 1, GL_TRUE, new_scaling.m);
             /*glBindVertexArray(cur_entity->model->vao);    // Select VAO*/
             DrawModel(cur_entity->model, shader, cur_entity->in_pos, cur_entity->in_normal, cur_entity->in_tex);
             glDrawElements(GL_TRIANGLES, cur_entity->model->numIndices, GL_UNSIGNED_INT, 0L); // draw element on VAO
@@ -351,7 +351,7 @@ void renderEntities(){
 
 
     glUseProgram(skyboxshader); // Added 2022-03
-    glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "viewToWorld"), 1, GL_TRUE, (inverse(r) * lookAtv(p, l, v)).m);
+    glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "worldToView"), 1, GL_TRUE, (inverse(r) * lookAtv(p, l, v)).m);
     glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "projection"), 1, GL_TRUE, projectionMatrix);
 
 	glDisable(GL_DEPTH_TEST);
@@ -373,7 +373,7 @@ void renderEntities(){
     glUniform1iv(glGetUniformLocation(program, "isDirectional"), 4, isDirectional);
 
     t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
-    glUniformMatrix4fv(glGetUniformLocation(program, "viewToWorld"), 1, GL_TRUE, (lookAtm).m);
+    glUniformMatrix4fv(glGetUniformLocation(program, "worldToView"), 1, GL_TRUE, (lookAtm).m);
     glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_TRUE, projectionMatrix);
 	printError("upload matrix error");
     wingRotation->rotation = xRotation(t/1000);
@@ -423,7 +423,7 @@ void translate(float x, float y, float z, mat4* matrix){
 
 
 void move(unsigned char key, mat4* matrix, const char* keyset){
-    float speed = 0.4;
+    float speed = 0.8;
 
     if (key == keyset[0]){
         translate(speed, 0.0, 0.0, matrix);
@@ -507,7 +507,7 @@ void mouseCallback(int x, int y){
     int dx = prevx - x;
     int dy = prevy - y;
 
-    if (abs(dx) > 5 || abs(dy) > 5)
+    if (abs(dx) > 20 || abs(dy) > 20)
     {
         dx = 0;
         dy = 0;
