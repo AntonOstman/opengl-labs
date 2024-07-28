@@ -162,7 +162,7 @@ void renderEntity(GraphicsEntity* entity, GLuint shader) {
 
         new_scaling = scaling * cur_entity->translation * cur_entity->rotation * cur_entity->scaling;
         if (cur_entity->model != nullptr){
-            glUniformMatrix4fv(glGetUniformLocation(shader, "scaleMatrix"), 1, GL_TRUE, new_scaling.m);
+            glUniformMatrix4fv(glGetUniformLocation(shader, "modelToView"), 1, GL_TRUE, new_scaling.m);
             /*glBindVertexArray(cur_entity->model->vao);    // Select VAO*/
             DrawModel(cur_entity->model, shader, cur_entity->in_pos, cur_entity->in_normal, cur_entity->in_tex);
             glDrawElements(GL_TRIANGLES, cur_entity->model->numIndices, GL_UNSIGNED_INT, 0L); // draw element on VAO
@@ -351,7 +351,7 @@ void renderEntities(){
 
 
     glUseProgram(skyboxshader); // Added 2022-03
-    glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "lookAt"), 1, GL_TRUE, (inverse(r) * lookAtv(p, l, v)).m);
+    glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "viewToWorld"), 1, GL_TRUE, (inverse(r) * lookAtv(p, l, v)).m);
     glUniformMatrix4fv(glGetUniformLocation(skyboxshader, "projection"), 1, GL_TRUE, projectionMatrix);
 
 	glDisable(GL_DEPTH_TEST);
@@ -366,14 +366,14 @@ void renderEntities(){
 
     glUseProgram(program); // Added 2022-03
     vec3 camPos = vec3(camT.m[3], camT.m[7], camT.m[11]);
-    printVec3(camPos);
+    /*printVec3(camPos);*/
     glUniform3fv(glGetUniformLocation(program, "camPos"), 1, &camPos.x);
     glUniform3fv(glGetUniformLocation(program, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
     glUniform3fv(glGetUniformLocation(program, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
     glUniform1iv(glGetUniformLocation(program, "isDirectional"), 4, isDirectional);
 
     t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
-    glUniformMatrix4fv(glGetUniformLocation(program, "lookAt"), 1, GL_TRUE, (lookAtm).m);
+    glUniformMatrix4fv(glGetUniformLocation(program, "viewToWorld"), 1, GL_TRUE, (lookAtm).m);
     glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_TRUE, projectionMatrix);
 	printError("upload matrix error");
     wingRotation->rotation = xRotation(t/1000);
@@ -513,7 +513,7 @@ void mouseCallback(int x, int y){
         dy = 0;
     }
 
-    printf("d: %d %d x: %f y: %f \n", dx, dy, anglex, angley);
+    /*printf("d: %d %d x: %f y: %f \n", dx, dy, anglex, angley);*/
 
     anglex += ((float)dx) / 100.f;
     angley += ((float)dy) / 100.f;
@@ -528,7 +528,7 @@ void mouseCallback(int x, int y){
     prevx = x;
     prevy = y;
     lookAtm = inverse(r) * camT * lookAt(p, l, v);
-    printMat4(camT);
+    /*printMat4(camT);*/
 }
 
 int main(int argc, char *argv[])
