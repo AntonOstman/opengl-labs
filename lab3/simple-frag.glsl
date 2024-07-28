@@ -2,7 +2,7 @@
 
 uniform vec3 lightSourcesDirPosArr[4];
 uniform vec3 lightSourcesColorArr[4];
-uniform bool isDirectional[4];
+uniform int isDirectional[4];
 uniform vec3 ambientColor;
 uniform float specularExponent;
 uniform vec3 camPos;
@@ -23,13 +23,10 @@ void main(void)
     vec3 cameraDirection = normalize(vec3(worldToView * vec4(surfaceCoord, 1)));
 
     for (int i = 0; i < 4; i++){
-        vec3 lightIncident;
-        if (isDirectional[i]) {
-            lightIncident = normalize(mat3(worldToView) * lightSourcesDirPosArr[i]);
-        }
-        else {
-            lightIncident = normalize(mat3(worldToView) * (lightSourcesDirPosArr[i] - surfaceCoord));
-        }
+
+        int isPositional = (1 - isDirectional[i]);
+        vec3 lightIncident = normalize(mat3(worldToView) * (lightSourcesDirPosArr[i] - surfaceCoord * isPositional));
+
         vec3 lightColor = lightSourcesColorArr[i];
         float strength = max(0, dot(lightIncident, normalize(viewNormal)));
         vec3 diffuseLight = strength * lightColor;
